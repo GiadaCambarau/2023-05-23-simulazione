@@ -1,6 +1,7 @@
 package it.polito.tdp.baseball.db;
 
 import java.sql.Connection;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,8 +11,9 @@ import java.util.List;
 import java.util.Map;
 
 import it.polito.tdp.baseball.model.Appearances;
-import it.polito.tdp.baseball.model.Arco;
+
 import it.polito.tdp.baseball.model.People;
+import it.polito.tdp.baseball.model.PlayerTeam;
 import it.polito.tdp.baseball.model.Team;
 
 
@@ -93,6 +95,68 @@ public class BaseballDAO {
 
 			conn.close();
 			return result;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Errore connessione al database");
+			throw new RuntimeException("Error Connection Database");
+		}
+	}
+	
+	public List<People> getVertici(double salario, int anno, Map<String, People> mappa){
+		String sql = "SELECT s.playerID "
+				+ "FROM salaries s, appearances a "
+				+ "WHERE s.playerID = a.playerID AND s.YEAR = ? AND s.salary > ? "
+				+ "GROUP BY s.playerID";
+		
+		List<People> giocatori = new ArrayList<>();
+		
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, anno);
+			st.setDouble(2, salario);
+			ResultSet rs = st.executeQuery();
+			
+			
+
+			while (rs.next()) {
+				String id = rs.getString("playerID");
+				giocatori.add(mappa.get(id));
+			}
+
+			conn.close();
+			return giocatori;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Errore connessione al database");
+			throw new RuntimeException("Error Connection Database");
+		}
+	}
+	
+	public List<PlayerTeam> getPlayerTeam(int anno, Map<String, People> mappa){
+		String sql = "SELECT a.teamID , a.playerID "
+				+ "FROM appearances a "
+				+ "WHERE a.`year`= ?";
+		
+		List<PlayerTeam> giocatori = new ArrayList<>();
+		
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, anno);
+			ResultSet rs = st.executeQuery();
+			
+			
+
+			while (rs.next()) {
+				PlayerTeam p = new PlayerTeam(mappa.get(rs.getString("playerID")), rs.getInt("teamID"));
+				giocatori.add(p);
+			}
+
+			conn.close();
+			return giocatori;
 
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -192,5 +256,35 @@ public class BaseballDAO {
 		}
 		return null;
 	}
+
+
+
+	public double getSalarioGiocatore(People p, int anno) {
+		String sql= "SELECT s.salary "
+				+ "FROM salaries s "
+				+ "WHERE s.playerID = ? AND s.`year` = ? ";
+		
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setString(1, p.getPlayerID());
+			st.setInt(2, anno);
+			ResultSet rs = st.executeQuery();
+			
+			rs.next();
+			double salario = rs.getDouble("salary");
+
+			conn.close();
+			return salario;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Errore connessione al database");
+			throw new RuntimeException("Error Connection Database");
+		}
+		
+	}
+	
+	
 
 }
